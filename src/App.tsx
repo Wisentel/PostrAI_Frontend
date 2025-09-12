@@ -10,6 +10,9 @@ import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import PosterCreation from "./pages/PosterCreation";
+import TemplateSelection from "./pages/TemplateSelection";
+import PosterViewer from "./pages/PosterViewer";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -34,6 +37,9 @@ const App = () => {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/poster-creation" element={<PosterCreation />} />
+              <Route path="/template-selection" element={<TemplateSelection />} />
+              <Route path="/poster-viewer" element={<PosterViewer />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

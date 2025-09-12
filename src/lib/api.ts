@@ -16,7 +16,8 @@ const getApiBaseUrl = (): string => {
   if (isProduction) {
     return 'https://postrai-backend.onrender.com/api';
   } else {
-    return 'http://localhost:8000/api';
+    // return 'http://localhost:8000/api';
+    return "https://postrai-backend.onrender.com/api";
   }
 };
 
