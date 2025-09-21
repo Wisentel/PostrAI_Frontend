@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import PosterCreation from "./pages/PosterCreation";
 import TemplateSelection from "./pages/TemplateSelection";
 import PosterViewer from "./pages/PosterViewer";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -40,6 +41,7 @@ const App = () => {
               <Route path="/poster-creation" element={<PosterCreation />} />
               <Route path="/template-selection" element={<TemplateSelection />} />
               <Route path="/poster-viewer" element={<PosterViewer />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

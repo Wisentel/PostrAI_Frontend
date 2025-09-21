@@ -60,6 +60,10 @@ export const TopNavbar = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Logout</span>
