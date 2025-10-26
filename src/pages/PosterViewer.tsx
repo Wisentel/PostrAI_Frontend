@@ -2,22 +2,37 @@ import { useNavigate } from "react-router-dom";
 import { TopNavbar } from "@/components/TopNavbar";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { Document, Page } from 'react-pdf';
+import { useState, useEffect } from 'react';
+import './PosterViewer.css';
+import { pdfjs } from 'react-pdf';
 
 const PosterViewer = () => {
+  // Initialize PDF.js worker
+  useEffect(() => {
+    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+  }, []);
   const navigate = useNavigate();
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // For development, we'll use a PDF from the temp folder
+  const pdfUrl = '/temp/sample-poster.pdf';
 
   const handleBack = () => {
     navigate("/template-selection");
   };
 
   const handleDownload = () => {
-    // In a real implementation, this would download the generated PDF
-    console.log("Downloading poster PDF...");
-    // For now, we'll create a simple download action
     const link = document.createElement('a');
-    link.href = '/placeholder.svg'; // Using placeholder for demo
+    link.href = pdfUrl;
     link.download = 'generated-poster.pdf';
     link.click();
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
   };
 
   return (
@@ -51,17 +66,51 @@ const PosterViewer = () => {
           </div>
 
           {/* PDF Viewer */}
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="aspect-[3/4] w-full">
-              <iframe
-                src="/placeholder.svg"
-                className="w-full h-full border-0"
-                title="Generated Poster PDF"
+          <div className="bg-white rounded-lg shadow-lg overflow-hidden p-4">
+            <div className="pdf-container">
+              <Document
+                file={pdfUrl}
+                onLoadSuccess={(result) => {
+                  console.log('PDF loaded successfully');
+                  setNumPages(result.numPages);
+                  setIsLoading(false);
+                }}
+                onLoadError={(error) => {
+                  console.error('Error loading PDF:', error);
+                  setIsLoading(false);
+                }}
+                loading={
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                      <p>Loading PDF...</p>
+                    </div>
+                  </div>
+                }
+                error={
+                  <div className="p-8 text-center text-red-500">
+                    <p className="font-semibold mb-2">Error loading PDF</p>
+                    <p className="text-sm">Please ensure the PDF file exists at {pdfUrl}</p>
+                  </div>
+                }
               >
-                <p>Your browser does not support PDFs. 
-                   <a href="/placeholder.svg">Download the PDF</a> instead.
-                </p>
-              </iframe>
+                <Page
+                  pageNumber={pageNumber}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  className="react-pdf__Page"
+                  scale={1.0}
+                  loading={<div>Loading page...</div>}
+                  error={<div>Error loading page!</div>}
+                />
+              </Document>
+              {!isLoading && numPages > 0 && (
+                <div className="pdf-controls">
+                  <span className="text-slate-600">
+                    Page {pageNumber} of {numPages}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
