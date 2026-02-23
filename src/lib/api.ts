@@ -14,10 +14,10 @@ const getApiBaseUrl = (): string => {
                       window.location.hostname !== 'localhost';
   
   if (isProduction) {
-    return 'https://postrai-backend.onrender.com/api';
+    return 'https://postrai-backend-gie8.onrender.com/api';
   } else {
     // return 'http://localhost:8000/api';
-    return "https://postrai-backend.onrender.com/api";
+    return "https://postrai-backend-gie8.onrender.com/api";
   }
 };
 
