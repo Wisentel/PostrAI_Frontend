@@ -11,7 +11,7 @@ interface PapersViewProps {
   papers: Paper[];
   selectedPaper: Paper | null;
   onSelectPaper: (paper: Paper) => void;
-  onToggleStar: (paperId: string) => void;
+  onTogglePaperFolder: (paperId: string, folderId: string) => void;
   folder: string;
   isLoadingPapers?: boolean;
   papersError?: string | null;
@@ -21,7 +21,7 @@ export const PapersView = ({
   papers,
   selectedPaper,
   onSelectPaper,
-  onToggleStar,
+  onTogglePaperFolder,
   folder,
   isLoadingPapers = false,
   papersError = null,
@@ -84,7 +84,7 @@ export const PapersView = ({
                 key={paper.id}
                 paper={paper}
                 onSelect={onSelectPaper}
-                onToggleStar={onToggleStar}
+                onTogglePaperFolder={onTogglePaperFolder}
                 isSelected={selectedPaper?.id === paper.id}
               />
             ))}

@@ -9,7 +9,6 @@ interface PosterPapersViewProps {
   papers: Paper[];
   selectedPapers: string[];
   onToggleSelection: (paperId: string) => void;
-  onToggleStar: (paperId: string) => void;
   folder: string;
   isLoadingPapers?: boolean;
   papersError?: string | null;
@@ -19,7 +18,6 @@ export const PosterPapersView = ({
   papers,
   selectedPapers,
   onToggleSelection,
-  onToggleStar,
   folder,
   isLoadingPapers = false,
   papersError = null,
@@ -89,7 +87,6 @@ export const PosterPapersView = ({
                 paper={paper}
                 isSelected={selectedPapers.includes(paper.id)}
                 onToggleSelection={onToggleSelection}
-                onToggleStar={onToggleStar}
               />
             ))}
           </div>

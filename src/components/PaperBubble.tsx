@@ -1,16 +1,22 @@
-
-import { Star, Calendar, User, Tag } from "lucide-react";
+import { Calendar, User, Tag, BookMarked, Star, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Paper } from "@/pages/Dashboard";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PaperBubbleProps {
   paper: Paper;
   onSelect: (paper: Paper) => void;
-  onToggleStar: (paperId: string) => void;
+  onTogglePaperFolder: (paperId: string, folderId: string) => void;
   isSelected: boolean;
 }
 
-export const PaperBubble = ({ paper, onSelect, onToggleStar, isSelected }: PaperBubbleProps) => {
+const FOLDER_ICONS = [
+  { id: "myPapers", label: "My Papers", Icon: BookMarked, activeColor: "text-blue-600", activeFill: "fill-blue-100" },
+  { id: "favorites", label: "Favorites", Icon: Star, activeColor: "text-yellow-500", activeFill: "fill-yellow-100" },
+  { id: "public", label: "Public", Icon: Globe, activeColor: "text-emerald-600", activeFill: "fill-emerald-100" },
+];
+
+export const PaperBubble = ({ paper, onSelect, onTogglePaperFolder, isSelected }: PaperBubbleProps) => {
   return (
     <div
       className={`
@@ -25,14 +31,45 @@ export const PaperBubble = ({ paper, onSelect, onToggleStar, isSelected }: Paper
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          {/* Title and Date Row */}
+          {/* Title and top-right controls */}
           <div className="flex items-start justify-between mb-2">
             <h3 className="text-lg font-semibold text-slate-800 truncate pr-2">
               {paper.title}
             </h3>
-            <div className="flex items-center text-sm text-slate-500 shrink-0">
-              <Calendar className="w-4 h-4 mr-1" />
-              {paper.date}
+            <div className="flex items-center gap-1 shrink-0">
+              <TooltipProvider>
+                {FOLDER_ICONS.map(({ id, label, Icon, activeColor, activeFill }) => {
+                  const active = paper.folders?.includes(id) ?? false;
+                  return (
+                    <Tooltip key={id}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 hover:bg-slate-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onTogglePaperFolder(paper.id, id);
+                          }}
+                        >
+                          <Icon
+                            className={`w-4 h-4 transition-colors ${
+                              active ? `${activeColor} ${activeFill}` : "text-slate-300 hover:text-slate-400"
+                            }`}
+                          />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs">{active ? `Remove from ${label}` : `Add to ${label}`}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </TooltipProvider>
+              <div className="flex items-center text-sm text-slate-500 ml-1">
+                <Calendar className="w-4 h-4 mr-1" />
+                {paper.date}
+              </div>
             </div>
           </div>
 
@@ -68,25 +105,6 @@ export const PaperBubble = ({ paper, onSelect, onToggleStar, isSelected }: Paper
           <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed">
             {paper.abstract}
           </p>
-        </div>
-
-        {/* Star Button */}
-        <div className="ml-4 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStar(paper.id);
-            }}
-            className="h-8 w-8 p-0 hover:bg-yellow-50"
-          >
-            <Star
-              className={`w-4 h-4 transition-colors ${
-                paper.isStarred ? "fill-yellow-500 text-yellow-500" : "text-slate-400 hover:text-yellow-400"
-              }`}
-            />
-          </Button>
         </div>
       </div>
     </div>

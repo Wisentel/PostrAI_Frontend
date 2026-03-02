@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,9 +34,10 @@ export const DashboardSidebar = ({
   const [isAddingTopicUI, setIsAddingTopicUI] = useState(false);
 
   const folders = [
-    { id: "myResearch", name: "My Research Papers" },
-    { id: "privateCollection", name: "Private Collection" },
-    { id: "publicCollection", name: "Public Collection" }
+    { id: "myFeed", name: "My Feed" },
+    { id: "myPapers", name: "My Papers" },
+    { id: "favorites", name: "Favorites" },
+    { id: "public", name: "Public" }
   ];
 
   const handleAddTopic = async () => {

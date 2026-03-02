@@ -14,7 +14,7 @@ export interface Paper {
   labels: string[];
   abstract: string;
   summary: string;
-  isStarred: boolean;
+  folders: string[]; // which folders this paper belongs to: "myPapers", "favorites", "public"
   folder: string;
 }
 
@@ -23,6 +23,13 @@ export interface Topic {
   name: string;
   isSelected: boolean;
 }
+
+const FOLDER_DEFS = [
+  { id: "myFeed", name: "My Feed" },
+  { id: "myPapers", name: "My Papers" },
+  { id: "favorites", name: "Favorites" },
+  { id: "public", name: "Public" },
+];
 
 // Sample document IDs for demonstration - in a real app, these would come from user data or be configurable
 const SAMPLE_DOCUMENT_IDS = [
@@ -35,9 +42,9 @@ const SAMPLE_DOCUMENT_IDS = [
 
 const Dashboard = () => {
   const { user, isAuthenticated, isLoading } = useUser();
-  const [selectedFolder, setSelectedFolder] = useState<string>("myResearch");
+  const [selectedFolder, setSelectedFolder] = useState<string>("myFeed");
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
-  const [allPapers, setAllPapers] = useState<Record<string, Paper[]>>({});
+  const [allPapers, setAllPapers] = useState<Paper[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [isLoadingTopics, setIsLoadingTopics] = useState<boolean>(false);
   const [isLoadingPapers, setIsLoadingPapers] = useState<boolean>(false);
@@ -105,8 +112,8 @@ const Dashboard = () => {
 
       console.log('Documents grouped by folder:', documentsByFolder);
 
-      // Step 3: Fetch metadata for each folder separately
-      const allFolderPapers: Record<string, Paper[]> = {};
+      // Step 3: Fetch metadata for each folder separately, then flatten to Paper[]
+      const flattenedPapers: Paper[] = [];
       
       for (const [folder, documentIds] of Object.entries(documentsByFolder)) {
         console.log(`Fetching metadata for folder: ${folder}, documents:`, documentIds);
@@ -116,31 +123,36 @@ const Dashboard = () => {
         });
 
         if (metadataResponse.success) {
-          // Convert API response to Paper interface format
-          const papers: Paper[] = metadataResponse.papers.map(paper => ({
-            id: paper.document_id,
-            title: paper.title,
-            authors: paper.authors,
-            date: paper.published_date,
-            labels: paper.labels,
-            abstract: paper.abstract,
-            summary: paper.summary,
-            isStarred: userDocuments.find(doc => doc.document_id === paper.document_id)?.is_favorite || false,
-            folder: folder
-          }));
-
-          // Map folder names to match the existing folder structure
           const folderKey = mapFolderNameToKey(folder);
-          allFolderPapers[folderKey] = papers;
           
+          // Convert API response to Paper interface with folders array
+          const papers: Paper[] = metadataResponse.papers.map(paper => {
+            const userDoc = userDocuments.find(doc => doc.document_id === paper.document_id);
+            const isFavorite = userDoc?.is_favorite || false;
+            const folders: string[] = [folderKey];
+            if (isFavorite && !folders.includes("favorites")) folders.push("favorites");
+            return {
+              id: paper.document_id,
+              title: paper.title,
+              authors: paper.authors,
+              date: paper.published_date,
+              labels: paper.labels,
+              abstract: paper.abstract,
+              summary: paper.summary,
+              folders,
+              folder: folderKey
+            };
+          });
+
+          flattenedPapers.push(...papers);
           console.log(`Papers loaded for folder ${folder} (${folderKey}):`, papers);
         } else {
           console.error(`Failed to fetch metadata for folder ${folder}:`, metadataResponse);
         }
       }
 
-      console.log('All papers loaded:', allFolderPapers);
-      setAllPapers(allFolderPapers);
+      console.log('All papers loaded:', flattenedPapers);
+      setAllPapers(flattenedPapers);
 
     } catch (error) {
       console.error('Error fetching user papers:', error);
@@ -154,13 +166,13 @@ const Dashboard = () => {
   const mapFolderNameToKey = (folderName: string): string => {
     switch (folderName) {
       case 'my_papers':
-        return 'myResearch';
+        return 'myPapers';
       case 'private_collection':
-        return 'privateCollection';
+        return 'myPapers';
       case 'public_collection':
-        return 'publicCollection';
+        return 'public';
       default:
-        return 'myResearch'; // Default fallback
+        return 'myPapers';
     }
   };
 
@@ -233,16 +245,15 @@ const Dashboard = () => {
     return null;
   }
 
-  const currentPapers = allPapers[selectedFolder] || [];
+  const currentPapers =
+    selectedFolder === "myFeed"
+      ? allPapers
+      : allPapers.filter((p) => p.folders?.includes(selectedFolder) ?? false);
 
-  const folderNames: Record<string, string> = {
-    myResearch: "My Research Papers",
-    privateCollection: "Private Collection",
-    publicCollection: "Public Collection"
-  };
+  const folderName = FOLDER_DEFS.find((f) => f.id === selectedFolder)?.name ?? selectedFolder;
 
   const toggleTopic = (topicId: string) => {
-    setTopics(topics.map(topic => 
+    setTopics(topics.map((topic) => 
       topic.id === topicId ? { ...topic, isSelected: !topic.isSelected } : topic
     ));
   };
@@ -280,51 +291,27 @@ const Dashboard = () => {
     }
   };
 
-  const togglePaperStar = (paperId: string) => {
-    setAllPapers(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(folderKey => {
-        updated[folderKey] = updated[folderKey].map(paper =>
-          paper.id === paperId ? { ...paper, isStarred: !paper.isStarred } : paper
-        );
-      });
-      return updated;
-    });
-
-    // Update selected paper if it's the one being starred
+  // Toggle a paper's membership in a given sub-folder
+  const togglePaperFolder = (paperId: string, folderId: string) => {
+    setAllPapers((prev) =>
+      prev.map((paper) => {
+        if (paper.id !== paperId) return paper;
+        const inFolder = paper.folders.includes(folderId);
+        const newFolders = inFolder
+          ? paper.folders.filter((f) => f !== folderId)
+          : [...paper.folders, folderId];
+        return { ...paper, folders: newFolders };
+      })
+    );
     if (selectedPaper?.id === paperId) {
-      setSelectedPaper(prev => prev ? { ...prev, isStarred: !prev.isStarred } : null);
-    }
-  };
-
-  const movePaper = (paperId: string, newFolder: string) => {
-    setAllPapers(prev => {
-      const updated = { ...prev };
-      let paperToMove: Paper | null = null;
-
-      // Find and remove the paper from its current folder
-      Object.keys(updated).forEach(folderKey => {
-        const paperIndex = updated[folderKey].findIndex(paper => paper.id === paperId);
-        if (paperIndex !== -1) {
-          paperToMove = { ...updated[folderKey][paperIndex], folder: newFolder };
-          updated[folderKey] = updated[folderKey].filter(paper => paper.id !== paperId);
-        }
+      setSelectedPaper((prev) => {
+        if (!prev) return null;
+        const inFolder = prev.folders.includes(folderId);
+        const newFolders = inFolder
+          ? prev.folders.filter((f) => f !== folderId)
+          : [...prev.folders, folderId];
+        return { ...prev, folders: newFolders };
       });
-
-      // Add the paper to the new folder
-      if (paperToMove) {
-        if (!updated[newFolder]) {
-          updated[newFolder] = [];
-        }
-        updated[newFolder] = [...updated[newFolder], paperToMove];
-      }
-
-      return updated;
-    });
-
-    // Update selected paper if it's the one being moved
-    if (selectedPaper?.id === paperId) {
-      setSelectedPaper(prev => prev ? { ...prev, folder: newFolder } : null);
     }
   };
 
@@ -360,8 +347,8 @@ const Dashboard = () => {
                 papers={currentPapers}
                 selectedPaper={selectedPaper}
                 onSelectPaper={setSelectedPaper}
-                onToggleStar={togglePaperStar}
-                folder={folderNames[selectedFolder]}
+                onTogglePaperFolder={togglePaperFolder}
+                folder={folderName}
                 isLoadingPapers={isLoadingPapers}
                 papersError={papersError}
               />
@@ -371,14 +358,13 @@ const Dashboard = () => {
             {selectedPaper && (
               <div className={`transition-all duration-300 overflow-hidden ${
                 selectedPaper 
-                  ? 'w-[40%] min-w-[350px] max-w-[45%] opacity-100 translate-x-0' 
+                  ? 'w-[40%] min-w-[400px] max-w-[45%] opacity-100 translate-x-0' 
                   : 'w-0 opacity-0 translate-x-full'
               }`}>
                 <PaperDetails
                   paper={selectedPaper}
                   onClose={() => setSelectedPaper(null)}
-                  onToggleStar={togglePaperStar}
-                  onMovePaper={movePaper}
+                  onTogglePaperFolder={togglePaperFolder}
                 />
               </div>
             )}

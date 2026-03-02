@@ -17,8 +17,8 @@ const SAMPLE_DOCUMENT_IDS = [
 
 const PosterCreation = () => {
   const { user, isAuthenticated, isLoading } = useUser();
-  const [selectedFolder, setSelectedFolder] = useState<string>("myResearch");
-  const [allPapers, setAllPapers] = useState<Record<string, Paper[]>>({});
+  const [selectedFolder, setSelectedFolder] = useState<string>("myFeed");
+  const [allPapers, setAllPapers] = useState<Paper[]>([]);
   const [selectedPapers, setSelectedPapers] = useState<string[]>([]);
   const [isLoadingPapers, setIsLoadingPapers] = useState<boolean>(false);
   const [papersError, setPapersError] = useState<string | null>(null);
@@ -78,8 +78,8 @@ const PosterCreation = () => {
 
       console.log('Documents grouped by folder:', documentsByFolder);
 
-      // Step 3: Fetch metadata for each folder separately
-      const allFolderPapers: Record<string, Paper[]> = {};
+      // Step 3: Fetch metadata for each folder separately, then flatten to Paper[]
+      const flattenedPapers: Paper[] = [];
       
       for (const [folder, documentIds] of Object.entries(documentsByFolder)) {
         console.log(`Fetching metadata for folder: ${folder}, documents:`, documentIds);
@@ -89,31 +89,36 @@ const PosterCreation = () => {
         });
 
         if (metadataResponse.success) {
-          // Convert API response to Paper interface format
-          const papers: Paper[] = metadataResponse.papers.map(paper => ({
-            id: paper.document_id,
-            title: paper.title,
-            authors: paper.authors,
-            date: paper.published_date,
-            labels: paper.labels,
-            abstract: paper.abstract,
-            summary: paper.summary,
-            isStarred: userDocuments.find(doc => doc.document_id === paper.document_id)?.is_favorite || false,
-            folder: folder
-          }));
-
-          // Map folder names to match the existing folder structure
           const folderKey = mapFolderNameToKey(folder);
-          allFolderPapers[folderKey] = papers;
           
+          // Convert API response to Paper interface with folders array
+          const papers: Paper[] = metadataResponse.papers.map(paper => {
+            const userDoc = userDocuments.find(doc => doc.document_id === paper.document_id);
+            const isFavorite = userDoc?.is_favorite || false;
+            const folders: string[] = [folderKey];
+            if (isFavorite && !folders.includes("favorites")) folders.push("favorites");
+            return {
+              id: paper.document_id,
+              title: paper.title,
+              authors: paper.authors,
+              date: paper.published_date,
+              labels: paper.labels,
+              abstract: paper.abstract,
+              summary: paper.summary,
+              folders,
+              folder: folderKey
+            };
+          });
+
+          flattenedPapers.push(...papers);
           console.log(`Papers loaded for folder ${folder} (${folderKey}):`, papers);
         } else {
           console.error(`Failed to fetch metadata for folder ${folder}:`, metadataResponse);
         }
       }
 
-      console.log('All papers loaded for poster creation:', allFolderPapers);
-      setAllPapers(allFolderPapers);
+      console.log('All papers loaded for poster creation:', flattenedPapers);
+      setAllPapers(flattenedPapers);
 
     } catch (error) {
       console.error('Error fetching user papers for poster creation:', error);
@@ -127,13 +132,13 @@ const PosterCreation = () => {
   const mapFolderNameToKey = (folderName: string): string => {
     switch (folderName) {
       case 'my_papers':
-        return 'myResearch';
+        return 'myPapers';
       case 'private_collection':
-        return 'privateCollection';
+        return 'myPapers';
       case 'public_collection':
-        return 'publicCollection';
+        return 'public';
       default:
-        return 'myResearch'; // Default fallback
+        return 'myPapers';
     }
   };
 
@@ -152,13 +157,17 @@ const PosterCreation = () => {
     }
   }, [isAuthenticated, isLoading]);
 
-  const currentPapers = allPapers[selectedFolder] || [];
-
   const folderNames: Record<string, string> = {
-    myResearch: "My Research Papers",
-    privateCollection: "Private Collection",
-    publicCollection: "Public Collection"
+    myFeed: "My Feed",
+    myPapers: "My Papers",
+    favorites: "Favorites",
+    public: "Public"
   };
+
+  const currentPapers =
+    selectedFolder === "myFeed"
+      ? allPapers
+      : allPapers.filter((p) => p.folders?.includes(selectedFolder) ?? false);
 
   const togglePaperSelection = (paperId: string) => {
     setSelectedPapers(prev => 
@@ -166,18 +175,6 @@ const PosterCreation = () => {
         ? prev.filter(id => id !== paperId)
         : [...prev, paperId]
     );
-  };
-
-  const togglePaperStar = (paperId: string) => {
-    setAllPapers(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(folderKey => {
-        updated[folderKey] = updated[folderKey].map(paper =>
-          paper.id === paperId ? { ...paper, isStarred: !paper.isStarred } : paper
-        );
-      });
-      return updated;
-    });
   };
 
   // Show loading state while user context is loading
@@ -213,7 +210,6 @@ const PosterCreation = () => {
               papers={currentPapers}
               selectedPapers={selectedPapers}
               onToggleSelection={togglePaperSelection}
-              onToggleStar={togglePaperStar}
               folder={folderNames[selectedFolder]}
               isLoadingPapers={isLoadingPapers}
               papersError={papersError}

@@ -1,4 +1,4 @@
-import { Star, Calendar, User, Tag } from "lucide-react";
+import { Calendar, User, Tag } from "lucide-react";
 import { Paper } from "@/pages/Dashboard";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,14 +7,12 @@ interface PosterPaperBubbleProps {
   paper: Paper;
   isSelected: boolean;
   onToggleSelection: (paperId: string) => void;
-  onToggleStar: (paperId: string) => void;
 }
 
 export const PosterPaperBubble = ({
   paper,
   isSelected,
   onToggleSelection,
-  onToggleStar,
 }: PosterPaperBubbleProps) => {
   return (
     <div
@@ -81,25 +79,6 @@ export const PosterPaperBubble = ({
               {paper.abstract}
             </p>
           </div>
-        </div>
-
-        {/* Star Button */}
-        <div className="ml-4 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStar(paper.id);
-            }}
-            className="h-8 w-8 p-0 hover:bg-yellow-50"
-          >
-            <Star
-              className={`w-4 h-4 transition-colors ${
-                paper.isStarred ? "fill-yellow-500 text-yellow-500" : "text-slate-400 hover:text-yellow-400"
-              }`}
-            />
-          </Button>
         </div>
       </div>
     </div>

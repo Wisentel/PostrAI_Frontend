@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Star, Share, Download, Folder, ChevronDown, SendHorizontal, MoreVertical, Check } from "lucide-react";
+import { X, Share, Download, Folder, ChevronDown, SendHorizontal, MoreVertical, Check, BookMarked, Star, Globe } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,18 +14,16 @@ import type { Paper } from "@/pages/Dashboard";
 interface PaperDetailsProps {
   paper: Paper;
   onClose: () => void;
-  onToggleStar: (paperId: string) => void;
-  onMovePaper: (paperId: string, newFolder: string) => void;
+  onTogglePaperFolder: (paperId: string, folderId: string) => void;
 }
 
 const folderOptions = [
-  { id: "myResearch", name: "My Research Papers" },
-  { id: "privateCollection", name: "Private Collection" },
-  { id: "publicCollection", name: "Public Collection" }
+  { id: "myPapers", name: "My Papers", Icon: BookMarked },
+  { id: "favorites", name: "Favorites", Icon: Star },
+  { id: "public", name: "Public", Icon: Globe }
 ];
 
-export const PaperDetails = ({ paper, onClose, onToggleStar, onMovePaper }: PaperDetailsProps) => {
-  const [isMoving, setIsMoving] = useState(false);
+export const PaperDetails = ({ paper, onClose, onTogglePaperFolder }: PaperDetailsProps) => {
   const [noteText, setNoteText] = useState("");
   const [notes, setNotes] = useState<{ text: string; date: string }[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -56,31 +54,15 @@ export const PaperDetails = ({ paper, onClose, onToggleStar, onMovePaper }: Pape
     setEditText("");
   };
 
-  const handleFolderChange = async (newFolder: string) => {
-    if (newFolder === paper.folder) return;
-    
-    setIsMoving(true);
-    // Add a small delay for animation effect
-    setTimeout(() => {
-      onMovePaper(paper.id, newFolder);
-      setIsMoving(false);
-      onClose();
-    }, 300);
-  };
-
-  const currentFolderName = folderOptions.find(f => f.id === paper.folder)?.name;
 
   return (
-    <div className={`w-full h-full bg-white border-l border-slate-200 flex flex-col transition-all duration-300 ${isMoving ? 'opacity-75 scale-95' : 'opacity-100 scale-100'}`}>
+    <div className="min-w-0 w-full bg-white border-l border-slate-200 h-full flex flex-col">
       {/* Header */}
-      <div className="border-b border-slate-200 p-3 sm:p-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base sm:text-lg font-bold text-slate-800">Paper Details</h3>
+      <div className="border-b border-slate-200 p-3 sm:p-4 flex-shrink-0 min-w-0">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <h3 className="text-base sm:text-lg font-bold text-slate-800 truncate min-w-0">Paper Details</h3>
           
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onToggleStar(paper.id)}>
-              <Star className={`w-4 h-4 ${paper.isStarred ? "fill-yellow-500 text-yellow-500" : "text-slate-500"}`} />
-            </Button>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <Share className="w-4 h-4 text-slate-500" />
             </Button>
@@ -92,26 +74,28 @@ export const PaperDetails = ({ paper, onClose, onToggleStar, onMovePaper }: Pape
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 py-1">
                   <Folder className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="text-xs sm:text-sm hidden sm:inline">{currentFolderName}</span>
+                  <span className="text-xs sm:text-sm hidden sm:inline">Folders</span>
                   <span className="text-xs sm:hidden">Folder</span>
                   <ChevronDown className="w-4 h-4 ml-1 sm:ml-2" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {folderOptions.map((folder) => (
-                  <DropdownMenuItem
-                    key={folder.id}
-                    onClick={() => handleFolderChange(folder.id)}
-                    className={`text-sm cursor-pointer ${
-                      folder.id === paper.folder 
-                        ? "bg-blue-50 text-blue-700 font-medium" 
-                        : "hover:bg-slate-50"
-                    }`}
-                  >
-                    <Folder className="w-4 h-4 mr-2" />
-                    {folder.name}
-                  </DropdownMenuItem>
-                ))}
+              <DropdownMenuContent align="end" className="w-52">
+                {folderOptions.map(({ id, name, Icon }) => {
+                  const inFolder = paper.folders?.includes(id) ?? false;
+                  return (
+                    <DropdownMenuItem
+                      key={id}
+                      onClick={() => onTogglePaperFolder(paper.id, id)}
+                      className="text-sm cursor-pointer flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-4 h-4 text-slate-500" />
+                        {name}
+                      </div>
+                      {inFolder && <Check className="w-4 h-4 text-blue-600" />}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -124,14 +108,14 @@ export const PaperDetails = ({ paper, onClose, onToggleStar, onMovePaper }: Pape
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-3 sm:p-4 space-y-4 sm:space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
+        <div className="p-3 sm:p-4 space-y-4 sm:space-y-6 min-w-0">
           {/* Title */}
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-slate-800 mb-2 sm:mb-3 leading-tight">{paper.title}</h1>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-800 mb-2 sm:mb-3 leading-tight break-words">{paper.title}</h1>
             
             {/* Date and Authors */}
-            <p className="text-xs sm:text-sm text-slate-600 mb-3 sm:mb-4">
+            <p className="text-xs sm:text-sm text-slate-600 mb-3 sm:mb-4 break-words">
               {paper.date} • {paper.authors.join(", ")}
             </p>
             
@@ -149,17 +133,17 @@ export const PaperDetails = ({ paper, onClose, onToggleStar, onMovePaper }: Pape
           </div>
 
           {/* Abstract */}
-          <div>
+          <div className="min-w-0">
             <h4 className="font-semibold text-slate-800 mb-2 sm:mb-3 text-sm sm:text-base">Abstract</h4>
-            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed break-words">
               {paper.abstract}
             </p>
           </div>
 
           {/* Summary */}
-          <div>
+          <div className="min-w-0">
             <h4 className="font-semibold text-slate-800 mb-2 sm:mb-3 text-sm sm:text-base">Summary</h4>
-            <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+            <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line break-words">
               {paper.summary}
             </div>
           </div>
