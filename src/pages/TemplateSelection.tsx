@@ -4,12 +4,12 @@ import { TopNavbar } from "@/components/TopNavbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check, FileText, Zap, Sparkles } from "lucide-react";
-import templateAcademic from "@/assets/template-academic.jpg";
-import templateCreative from "@/assets/template-creative.jpg";
-import templateMinimal from "@/assets/template-minimal.jpg";
-import templateScientific from "@/assets/template-scientific.jpg";
-import templateBusiness from "@/assets/template-business.jpg";
-import templateEducational from "@/assets/template-educational.jpg";
+import templateCambridge from "@/assets/cambridge_template.png";
+import templateBrown from "@/assets/brown_template.png";
+import templateIowa from "@/assets/iowa_template.png";
+import templateNYU from "@/assets/nyu_template.png";
+import templateTAMU from "@/assets/tamu_template.png";
+import templateUMich from "@/assets/umich_template.png";
 
 const TemplateSelection = () => {
   const navigate = useNavigate();
@@ -18,40 +18,40 @@ const TemplateSelection = () => {
 
   const templates = [
   {
-    id: "academic",
-    name: "Academic Research",
-    image: templateAcademic,
-    description: "Clean and professional layout perfect for academic presentations"
+    id: "cambridge",
+    name: "Cambridge Template",
+    image: templateCambridge,
+    description: ""
   },
   {
-    id: "creative",
-    name: "Creative Conference",
-    image: templateCreative,
-    description: "Vibrant and modern design for creative and artistic presentations"
+    id: "brown",
+    name: "Brown Template",
+    image: templateBrown,
+    description: ""
   },
   {
-    id: "minimal",
-    name: "Minimalist",
-    image: templateMinimal,
-    description: "Simple and elegant design with focus on content"
+    id: "iowa",
+    name: "Iowa Template",
+    image: templateIowa,
+    description: ""
   },
   {
-    id: "scientific",
-    name: "Scientific Research",
-    image: templateScientific,
-    description: "Data-focused template ideal for scientific and medical research"
+    id: "nyu",
+    name: "NYU Template",
+    image: templateNYU,
+    description: ""
   },
   {
-    id: "business",
-    name: "Business Professional",
-    image: templateBusiness,
-    description: "Corporate design perfect for business presentations"
+    id: "tamu",
+    name: "TAMU Template",
+    image: templateTAMU,
+    description: ""
   },
   {
-    id: "educational",
-    name: "Educational",
-    image: templateEducational,
-    description: "Engaging and colorful design for educational content"
+    id: "umich",
+    name: "UMich Template",
+    image: templateUMich,
+    description: ""
   }
 ];
 
@@ -178,11 +178,11 @@ const TemplateSelection = () => {
                 onClick={() => handleTemplateSelect(template.id)}
               >
                 <CardContent className="p-0">
-                  <div className="aspect-video overflow-hidden">
+                  <div className="aspect-video overflow-hidden bg-slate-100 flex items-center justify-center">
                     <img
                       src={template.image}
                       alt={template.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
                     />
                   </div>
                   <div className="p-4">
