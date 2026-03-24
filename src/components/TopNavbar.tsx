@@ -25,7 +25,10 @@ export const TopNavbar = () => {
       <div className="flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1
+            className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent cursor-pointer"
+            onClick={() => navigate("/dashboard")}
+          >
             Wisentel
           </h1>
         </div>
@@ -45,7 +48,7 @@ export const TopNavbar = () => {
 
         {/* User Account */}
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
             <Settings className="w-5 h-5 text-slate-600" />
           </Button>
           

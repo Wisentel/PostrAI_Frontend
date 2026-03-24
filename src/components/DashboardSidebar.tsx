@@ -1,51 +1,40 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, ChevronDown, ChevronRight, Folder, FolderOpen, Loader2, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, FolderOpen, Loader2, AlertCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type { Topic } from "@/pages/Dashboard";
+import { useTopics } from "@/contexts/TopicsContext";
 
 interface DashboardSidebarProps {
-  topics: Topic[];
-  onToggleTopic: (topicId: string) => void;
-  onAddTopic: (topicName: string) => Promise<void>;
   selectedFolder: string;
   onSelectFolder: (folder: string) => void;
   isLoadingTopics?: boolean;
   topicsError?: string | null;
-  isAddingTopic?: boolean;
 }
 
 export const DashboardSidebar = ({
-  topics,
-  onToggleTopic,
-  onAddTopic,
   selectedFolder,
   onSelectFolder,
   isLoadingTopics = false,
   topicsError = null,
-  isAddingTopic = false,
 }: DashboardSidebarProps) => {
+  const { categories, toggleCategory, toggleSubTopic } = useTopics();
   const [isTopicsOpen, setIsTopicsOpen] = useState(true);
   const [isFoldersOpen, setIsFoldersOpen] = useState(true);
-  const [newTopicName, setNewTopicName] = useState("");
-  const [isAddingTopicUI, setIsAddingTopicUI] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(categories.map(c => [c.id, true]))
+  );
 
   const folders = [
     { id: "myFeed", name: "My Feed" },
     { id: "myPapers", name: "My Papers" },
-    { id: "favorites", name: "Favorites" },
+    { id: "private", name: "Private" },
     { id: "public", name: "Public" }
   ];
 
-  const handleAddTopic = async () => {
-    if (newTopicName.trim()) {
-      await onAddTopic(newTopicName.trim());
-      setNewTopicName("");
-      setIsAddingTopicUI(false);
-    }
+  const toggleExpanded = (categoryId: string) => {
+    setExpandedCategories(prev => ({ ...prev, [categoryId]: !prev[categoryId] }));
   };
 
   return (
@@ -80,7 +69,7 @@ export const DashboardSidebar = ({
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Topics Section */}
+          {/* Topics Section - Hierarchical */}
           <div className="mt-6">
             <Collapsible open={isTopicsOpen} onOpenChange={setIsTopicsOpen}>
               <CollapsibleTrigger asChild>
@@ -91,8 +80,7 @@ export const DashboardSidebar = ({
                 </Button>
               </CollapsibleTrigger>
               
-              <CollapsibleContent className="space-y-2 mt-2">
-                {/* Error State */}
+              <CollapsibleContent className="mt-2">
                 {topicsError && (
                   <Alert className="mb-2">
                     <AlertCircle className="h-4 w-4" />
@@ -102,7 +90,6 @@ export const DashboardSidebar = ({
                   </Alert>
                 )}
 
-                {/* Loading State */}
                 {isLoadingTopics && !topicsError && (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
@@ -110,89 +97,83 @@ export const DashboardSidebar = ({
                   </div>
                 )}
 
-                {/* Topics List */}
-                {!isLoadingTopics && !topicsError && topics.length > 0 && (
-                  <>
-                    {topics.map((topic) => (
-                      <div key={topic.id} className="flex items-center space-x-2 px-2 py-1">
-                        <Checkbox
-                          id={topic.id}
-                          checked={topic.isSelected}
-                          onCheckedChange={() => onToggleTopic(topic.id)}
-                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                        />
-                        <label
-                          htmlFor={topic.id}
-                          className="text-sm text-slate-600 cursor-pointer flex-1"
+                {!isLoadingTopics && !topicsError && categories.length > 0 && (
+                  <div className="space-y-1">
+                    {categories.map((category) => (
+                      <div key={category.id}>
+                        <Collapsible
+                          open={expandedCategories[category.id] ?? true}
+                          onOpenChange={() => toggleExpanded(category.id)}
                         >
-                          {topic.name}
-                        </label>
+                          {/* Category row */}
+                          <div className="flex items-center px-2 py-1.5 rounded-md hover:bg-slate-50 transition-colors">
+                            <CollapsibleTrigger asChild>
+                              <button className="p-0.5 mr-1 hover:bg-slate-200 rounded transition-colors">
+                                {expandedCategories[category.id] ? (
+                                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                                ) : (
+                                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                                )}
+                              </button>
+                            </CollapsibleTrigger>
+                            <Checkbox
+                              id={`dash-cat-${category.id}`}
+                              checked={category.isSelected}
+                              onCheckedChange={() => toggleCategory(category.id)}
+                              className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                            />
+                            <label
+                              htmlFor={`dash-cat-${category.id}`}
+                              className="ml-2 text-sm font-medium text-slate-700 cursor-pointer flex-1 truncate"
+                            >
+                              {category.name}
+                            </label>
+                          </div>
+
+                          {/* Subtopics */}
+                          <CollapsibleContent>
+                            {category.subTopics.length > 0 && (
+                              <div className="ml-8 pl-3 border-l border-slate-200 space-y-0.5 py-1 my-0.5">
+                                {category.subTopics.map((sub) => (
+                                  <div
+                                    key={sub.id}
+                                    className={`flex items-center px-2 py-1.5 rounded-md transition-colors ${
+                                      !category.isSelected
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : "hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    <Checkbox
+                                      id={`dash-sub-${sub.id}`}
+                                      checked={sub.isSelected}
+                                      disabled={!category.isSelected}
+                                      onCheckedChange={() => toggleSubTopic(category.id, sub.id)}
+                                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                    />
+                                    <label
+                                      htmlFor={`dash-sub-${sub.id}`}
+                                      className={`ml-2 text-sm cursor-pointer flex-1 truncate ${
+                                        !category.isSelected ? "text-slate-400" : "text-slate-600"
+                                      }`}
+                                    >
+                                      {sub.name}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CollapsibleContent>
+                        </Collapsible>
                       </div>
                     ))}
-                  </>
-                )}
-
-                {/* No Topics State */}
-                {!isLoadingTopics && !topicsError && topics.length === 0 && (
-                  <div className="px-2 py-4 text-center">
-                    <p className="text-sm text-slate-500">No topics found</p>
-                    <p className="text-xs text-slate-400 mt-1">Add your first topic below</p>
                   </div>
                 )}
-                
-                {/* Add Topic Section */}
-                {!isLoadingTopics && (
-                  <>
-                    {isAddingTopicUI ? (
-                      <div className="px-2 py-1 space-y-2">
-                        <Input
-                          value={newTopicName}
-                          onChange={(e) => setNewTopicName(e.target.value)}
-                          placeholder="Enter topic name"
-                          className="text-sm"
-                          onKeyPress={(e) => e.key === "Enter" && handleAddTopic()}
-                          autoFocus
-                          disabled={isAddingTopic}
-                        />
-                        <div className="flex space-x-2">
-                          <Button 
-                            size="sm" 
-                            onClick={handleAddTopic} 
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                            disabled={isAddingTopic || !newTopicName.trim()}
-                          >
-                            {isAddingTopic ? (
-                              <>
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Adding...
-                              </>
-                            ) : (
-                              'Add'
-                            )}
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => setIsAddingTopicUI(false)}
-                            disabled={isAddingTopic}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsAddingTopicUI(true)}
-                        className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        disabled={isAddingTopic}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add topic
-                      </Button>
-                    )}
-                  </>
+
+                {!isLoadingTopics && !topicsError && categories.length === 0 && (
+                  <div className="px-2 py-4 text-center">
+                    <p className="text-sm text-slate-500">No topics found</p>
+                    <p className="text-xs text-slate-400 mt-1">Add topics in Settings</p>
+                  </div>
                 )}
               </CollapsibleContent>
             </Collapsible>

@@ -14,20 +14,14 @@ export interface Paper {
   labels: string[];
   abstract: string;
   summary: string;
-  folders: string[]; // which folders this paper belongs to: "myPapers", "favorites", "public"
+  folders: string[]; // which folders this paper belongs to: "myPapers", "private", "public"
   folder: string;
-}
-
-export interface Topic {
-  id: string;
-  name: string;
-  isSelected: boolean;
 }
 
 const FOLDER_DEFS = [
   { id: "myFeed", name: "My Feed" },
   { id: "myPapers", name: "My Papers" },
-  { id: "favorites", name: "Favorites" },
+  { id: "private", name: "Private" },
   { id: "public", name: "Public" },
 ];
 
@@ -45,12 +39,8 @@ const Dashboard = () => {
   const [selectedFolder, setSelectedFolder] = useState<string>("myFeed");
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [allPapers, setAllPapers] = useState<Paper[]>([]);
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [isLoadingTopics, setIsLoadingTopics] = useState<boolean>(false);
   const [isLoadingPapers, setIsLoadingPapers] = useState<boolean>(false);
-  const [topicsError, setTopicsError] = useState<string | null>(null);
   const [papersError, setPapersError] = useState<string | null>(null);
-  const [isAddingTopic, setIsAddingTopic] = useState<boolean>(false);
 
   // Load user papers from API
   const fetchUserPapers = async () => {
@@ -130,7 +120,7 @@ const Dashboard = () => {
             const userDoc = userDocuments.find(doc => doc.document_id === paper.document_id);
             const isFavorite = userDoc?.is_favorite || false;
             const folders: string[] = [folderKey];
-            if (isFavorite && !folders.includes("favorites")) folders.push("favorites");
+            if (isFavorite && !folders.includes("private")) folders.push("private");
             return {
               id: paper.document_id,
               title: paper.title,
@@ -176,46 +166,9 @@ const Dashboard = () => {
     }
   };
 
-  // Load user topics from API
-  const fetchUserTopics = async () => {
-    if (!user?.user_id) {
-      console.log('No user or user_id available, skipping topics fetch');
-      return;
-    }
-
-    setIsLoadingTopics(true);
-    setTopicsError(null);
-
-    try {
-      console.log('Fetching topics for user:', user.user_id);
-      const response = await apiClient.getUserTopics({ user_id: user.user_id });
-      
-      if (response.success) {
-        // Convert API topics to Topic interface format
-        const userTopics: Topic[] = response.topics.map((topicName, index) => ({
-          id: (index + 1).toString(),
-          name: topicName,
-          isSelected: true, // Default to selected
-        }));
-        
-        console.log('User topics loaded:', userTopics);
-        setTopics(userTopics);
-      } else {
-        console.error('Failed to fetch user topics:', response);
-        setTopicsError('Failed to load your topics');
-      }
-    } catch (error) {
-      console.error('Error fetching user topics:', error);
-      setTopicsError(error instanceof Error ? error.message : 'Failed to load your topics');
-    } finally {
-      setIsLoadingTopics(false);
-    }
-  };
-
   // Load data when user changes
   useEffect(() => {
     if (user?.user_id) {
-      fetchUserTopics();
       fetchUserPapers();
     }
   }, [user?.user_id]);
@@ -252,45 +205,6 @@ const Dashboard = () => {
 
   const folderName = FOLDER_DEFS.find((f) => f.id === selectedFolder)?.name ?? selectedFolder;
 
-  const toggleTopic = (topicId: string) => {
-    setTopics(topics.map((topic) => 
-      topic.id === topicId ? { ...topic, isSelected: !topic.isSelected } : topic
-    ));
-  };
-
-  const addTopic = async (topicName: string) => {
-    if (!user?.user_id) {
-      console.error('No user_id available for adding topic');
-      return;
-    }
-
-    setIsAddingTopic(true);
-    setTopicsError(null);
-
-    try {
-      console.log('Adding topic:', topicName, 'for user:', user.user_id);
-      
-      const response = await apiClient.addUserTopics({
-        user_id: user.user_id,
-        topics: [topicName]
-      });
-
-      if (response.success) {
-        console.log('Topic added successfully:', response);
-        // Refresh the topics list to get the latest data
-        await fetchUserTopics();
-      } else {
-        console.error('Failed to add topic:', response);
-        setTopicsError('Failed to add topic');
-      }
-    } catch (error) {
-      console.error('Error adding topic:', error);
-      setTopicsError(error instanceof Error ? error.message : 'Failed to add topic');
-    } finally {
-      setIsAddingTopic(false);
-    }
-  };
-
   // Toggle a paper's membership in a given sub-folder
   const togglePaperFolder = (paperId: string, folderId: string) => {
     setAllPapers((prev) =>
@@ -324,14 +238,8 @@ const Dashboard = () => {
           {/* Left Sidebar - Fixed width, independent scroll */}
           <div className="w-64 flex-shrink-0">
             <DashboardSidebar
-              topics={topics}
-              onToggleTopic={toggleTopic}
-              onAddTopic={addTopic}
               selectedFolder={selectedFolder}
               onSelectFolder={setSelectedFolder}
-              isLoadingTopics={isLoadingTopics}
-              topicsError={topicsError}
-              isAddingTopic={isAddingTopic}
             />
           </div>
           

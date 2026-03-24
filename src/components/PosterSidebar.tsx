@@ -13,7 +13,7 @@ export const PosterSidebar = ({
   const folders = [
     { id: "myFeed", name: "My Feed" },
     { id: "myPapers", name: "My Papers" },
-    { id: "favorites", name: "Favorites" },
+    { id: "private", name: "Private" },
     { id: "public", name: "Public" }
   ];
 

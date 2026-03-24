@@ -1,4 +1,4 @@
-import { Calendar, User, Tag, BookMarked, Star, Globe } from "lucide-react";
+import { Calendar, User, Tag, BookMarked, Lock, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Paper } from "@/pages/Dashboard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -12,7 +12,7 @@ interface PaperBubbleProps {
 
 const FOLDER_ICONS = [
   { id: "myPapers", label: "My Papers", Icon: BookMarked, activeColor: "text-blue-600", activeFill: "fill-blue-100" },
-  { id: "favorites", label: "Favorites", Icon: Star, activeColor: "text-yellow-500", activeFill: "fill-yellow-100" },
+  { id: "private", label: "Private", Icon: Lock, activeColor: "text-purple-600", activeFill: "fill-purple-100" },
   { id: "public", label: "Public", Icon: Globe, activeColor: "text-emerald-600", activeFill: "fill-emerald-100" },
 ];
 

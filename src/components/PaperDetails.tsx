@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Share, Download, Folder, ChevronDown, SendHorizontal, MoreVertical, Check, BookMarked, Star, Globe } from "lucide-react";
+import { X, Share, Download, Folder, ChevronDown, SendHorizontal, MoreVertical, Check, BookMarked, Lock, Globe } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,7 @@ interface PaperDetailsProps {
 
 const folderOptions = [
   { id: "myPapers", name: "My Papers", Icon: BookMarked },
-  { id: "favorites", name: "Favorites", Icon: Star },
+  { id: "private", name: "Private", Icon: Lock },
   { id: "public", name: "Public", Icon: Globe }
 ];
 

@@ -1,56 +1,53 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TopNavbar } from "@/components/TopNavbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-
-interface Topic {
-  id: string;
-  name: string;
-  isSelected: boolean;
-}
+import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useTopics } from "@/contexts/TopicsContext";
 
 const Settings = () => {
-  const [topics, setTopics] = useState<Topic[]>([
-    { id: "1", name: "Machine Learning", isSelected: true },
-    { id: "2", name: "Computer Vision", isSelected: false },
-    { id: "3", name: "Natural Language Processing", isSelected: true },
-    { id: "4", name: "Robotics", isSelected: false },
-    { id: "5", name: "Data Science", isSelected: true },
-  ]);
-  const [newTopicName, setNewTopicName] = useState("");
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const navigate = useNavigate();
+  const {
+    categories,
+    toggleCategory,
+    toggleSubTopic,
+    addCategory,
+    removeCategory,
+    addSubTopic,
+    removeSubTopic,
+  } = useTopics();
 
-  const toggleTopic = (topicId: string) => {
-    setTopics(topics.map(topic => 
-      topic.id === topicId ? { ...topic, isSelected: !topic.isSelected } : topic
-    ));
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
+  const [newSubTopicName, setNewSubTopicName] = useState("");
+  const [subTopicPopoverCategoryId, setSubTopicPopoverCategoryId] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(categories.map(c => [c.id, true]))
+  );
+
+  const toggleExpanded = (categoryId: string) => {
+    setExpandedCategories(prev => ({ ...prev, [categoryId]: !prev[categoryId] }));
   };
 
-  const addTopic = (topicName: string) => {
-    if (topicName.trim() && !topics.some(topic => topic.name.toLowerCase() === topicName.toLowerCase())) {
-      const newTopic: Topic = {
-        id: Date.now().toString(),
-        name: topicName.trim(),
-        isSelected: true
-      };
-      setTopics([...topics, newTopic]);
-      setNewTopicName("");
-      setIsPopoverOpen(false);
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      addCategory(newCategoryName.trim());
+      setNewCategoryName("");
+      setIsCategoryPopoverOpen(false);
     }
   };
 
-  const removeTopic = (topicId: string) => {
-    setTopics(topics.filter(topic => topic.id !== topicId));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      addTopic(newTopicName);
+  const handleAddSubTopic = (categoryId: string) => {
+    if (newSubTopicName.trim()) {
+      addSubTopic(categoryId, newSubTopicName.trim());
+      setNewSubTopicName("");
+      setSubTopicPopoverCategoryId(null);
     }
   };
 
@@ -59,7 +56,20 @@ const Settings = () => {
       <div className="flex flex-col h-screen">
         <TopNavbar />
 
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-6 overflow-y-auto">
+          {/* Back button */}
+          <div className="mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 -ml-2"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back
+            </Button>
+          </div>
+
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-slate-800 mb-2">Settings</h1>
@@ -141,15 +151,15 @@ const Settings = () => {
               </CardContent>
             </Card>
 
-            {/* Topics Management */}
+            {/* Topics Management - Hierarchical */}
             <Card className="bg-white/80 backdrop-blur-sm border-slate-200">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-slate-800 flex items-center justify-between">
                   Research Topics
-                  <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                  <Popover open={isCategoryPopoverOpen} onOpenChange={setIsCategoryPopoverOpen}>
                     <PopoverTrigger asChild>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all"
                       >
                         <Plus className="w-4 h-4 mr-1" />
@@ -161,26 +171,23 @@ const Settings = () => {
                         <h4 className="font-medium text-slate-800">Add New Topic</h4>
                         <Input
                           placeholder="Enter topic name..."
-                          value={newTopicName}
-                          onChange={(e) => setNewTopicName(e.target.value)}
-                          onKeyPress={handleKeyPress}
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
                           className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
                         />
                         <div className="flex gap-2">
-                          <Button 
-                            onClick={() => addTopic(newTopicName)}
-                            disabled={!newTopicName.trim()}
+                          <Button
+                            onClick={handleAddCategory}
+                            disabled={!newCategoryName.trim()}
                             size="sm"
                             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all"
                           >
                             Add
                           </Button>
-                          <Button 
-                            onClick={() => {
-                              setNewTopicName("");
-                              setIsPopoverOpen(false);
-                            }}
-                            variant="outline" 
+                          <Button
+                            onClick={() => { setNewCategoryName(""); setIsCategoryPopoverOpen(false); }}
+                            variant="outline"
                             size="sm"
                             className="bg-white/80 hover:bg-white"
                           >
@@ -192,38 +199,144 @@ const Settings = () => {
                   </Popover>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {topics.map((topic) => (
-                    <div key={topic.id} className="relative group">
-                      <Badge
-                        variant={topic.isSelected ? "default" : "outline"}
-                        className={`cursor-pointer transition-all text-sm px-3 py-1 pr-8 ${
-                          topic.isSelected
-                            ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
-                            : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
-                        }`}
-                        onClick={() => toggleTopic(topic.id)}
-                      >
-                        {topic.name}
-                      </Badge>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeTopic(topic.id);
-                        }}
-                        className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {topics.length === 0 && (
+              <CardContent className="space-y-3">
+                {categories.length === 0 && (
                   <p className="text-slate-500 text-center py-8">
                     No topics added yet. Click "Add Topic" to get started.
                   </p>
                 )}
+
+                {categories.map((category) => (
+                  <div key={category.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                    <Collapsible
+                      open={expandedCategories[category.id] ?? true}
+                      onOpenChange={() => toggleExpanded(category.id)}
+                    >
+                      {/* Category header */}
+                      <div className="flex items-center justify-between px-3 py-2.5 bg-slate-50/80">
+                        <div className="flex items-center gap-2 flex-1">
+                          <CollapsibleTrigger asChild>
+                            <button className="p-0.5 hover:bg-slate-200 rounded transition-colors">
+                              {expandedCategories[category.id] ? (
+                                <ChevronDown className="w-4 h-4 text-slate-500" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-slate-500" />
+                              )}
+                            </button>
+                          </CollapsibleTrigger>
+                          <Checkbox
+                            id={`settings-cat-${category.id}`}
+                            checked={category.isSelected}
+                            onCheckedChange={() => toggleCategory(category.id)}
+                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          />
+                          <label
+                            htmlFor={`settings-cat-${category.id}`}
+                            className="text-sm font-medium text-slate-700 cursor-pointer flex-1"
+                          >
+                            {category.name}
+                          </label>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Popover
+                            open={subTopicPopoverCategoryId === category.id}
+                            onOpenChange={(open) => {
+                              setSubTopicPopoverCategoryId(open ? category.id : null);
+                              if (!open) setNewSubTopicName("");
+                            }}
+                          >
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                <Plus className="w-3.5 h-3.5" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72" align="end">
+                              <div className="space-y-3">
+                                <h4 className="font-medium text-slate-800 text-sm">Add Sub Topic to {category.name}</h4>
+                                <Input
+                                  placeholder="Enter sub topic name..."
+                                  value={newSubTopicName}
+                                  onChange={(e) => setNewSubTopicName(e.target.value)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleAddSubTopic(category.id)}
+                                  className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => handleAddSubTopic(category.id)}
+                                    disabled={!newSubTopicName.trim()}
+                                    size="sm"
+                                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all"
+                                  >
+                                    Add
+                                  </Button>
+                                  <Button
+                                    onClick={() => { setNewSubTopicName(""); setSubTopicPopoverCategoryId(null); }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-white/80 hover:bg-white"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                          <button
+                            onClick={() => removeCategory(category.id)}
+                            className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Subtopics */}
+                      <CollapsibleContent>
+                        {category.subTopics.length > 0 ? (
+                          <div className="ml-6 mr-3 my-2 pl-3 border-l border-slate-200 space-y-1.5">
+                            {category.subTopics.map((sub) => (
+                              <div
+                                key={sub.id}
+                                className={`group/sub flex items-center justify-between pl-2 pr-1 py-1.5 rounded transition-colors ${
+                                  !category.isSelected ? "opacity-50" : "hover:bg-slate-50"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 flex-1">
+                                  <Checkbox
+                                    id={`settings-sub-${sub.id}`}
+                                    checked={sub.isSelected}
+                                    disabled={!category.isSelected}
+                                    onCheckedChange={() => toggleSubTopic(category.id, sub.id)}
+                                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                  />
+                                  <label
+                                    htmlFor={`settings-sub-${sub.id}`}
+                                    className={`text-sm cursor-pointer flex-1 ${
+                                      !category.isSelected ? "text-slate-400" : "text-slate-600"
+                                    }`}
+                                  >
+                                    {sub.name}
+                                  </label>
+                                </div>
+                                <button
+                                  onClick={() => removeSubTopic(category.id, sub.id)}
+                                  className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover/sub:opacity-100"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="ml-6 mr-3 my-2 pl-3 border-l border-slate-200 py-2">
+                            <p className="text-xs text-slate-400 pl-2">No sub topics yet</p>
+                          </div>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </div>

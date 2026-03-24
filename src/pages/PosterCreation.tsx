@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TopNavbar } from "@/components/TopNavbar";
 import { PosterSidebar } from "@/components/PosterSidebar";
 import { PosterPapersView } from "@/components/PosterPapersView";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { Paper } from "./Dashboard";
 import { useUser } from "@/contexts/UserContext";
 import { apiClient } from "@/lib/api";
@@ -16,6 +19,7 @@ const SAMPLE_DOCUMENT_IDS = [
 ];
 
 const PosterCreation = () => {
+  const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useUser();
   const [selectedFolder, setSelectedFolder] = useState<string>("myFeed");
   const [allPapers, setAllPapers] = useState<Paper[]>([]);
@@ -96,7 +100,7 @@ const PosterCreation = () => {
             const userDoc = userDocuments.find(doc => doc.document_id === paper.document_id);
             const isFavorite = userDoc?.is_favorite || false;
             const folders: string[] = [folderKey];
-            if (isFavorite && !folders.includes("favorites")) folders.push("favorites");
+            if (isFavorite && !folders.includes("private")) folders.push("private");
             return {
               id: paper.document_id,
               title: paper.title,
@@ -160,7 +164,7 @@ const PosterCreation = () => {
   const folderNames: Record<string, string> = {
     myFeed: "My Feed",
     myPapers: "My Papers",
-    favorites: "Favorites",
+    private: "Private",
     public: "Public"
   };
 
@@ -198,6 +202,18 @@ const PosterCreation = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       <div className="flex flex-col h-screen">
         <TopNavbar />
+
+        <div className="px-6 pt-4 pb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 -ml-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back
+          </Button>
+        </div>
 
         <div className="flex flex-1">
           <PosterSidebar
